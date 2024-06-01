@@ -1352,7 +1352,7 @@ class TextPainter {
   /// {@endtemplate}
   ///
   /// Valid only after [layout] has been called.
-  double? getFullHeightForCaret(TextPosition position, Rect caretPrototype) {
+  double getFullHeightForCaret(TextPosition position, Rect caretPrototype) {
     final TextBox textBox = _getOrCreateLayoutTemplate().getBoxesForRange(0, 1, boxHeightStyle: ui.BoxHeightStyle.strut).single;
     return textBox.toRect().height;
   }
@@ -1463,10 +1463,15 @@ class TextPainter {
     final _LineCaretMetrics metrics;
     final List<TextBox> boxes = cachedLayout.paragraph
       .getBoxesForRange(graphemeRange.start, graphemeRange.end, boxHeightStyle: ui.BoxHeightStyle.strut);
+
     if (boxes.isNotEmpty) {
-      final TextBox box = boxes.single;
+      final bool ahchorToLeft = switch (glyphInfo.writingDirection) {
+        TextDirection.ltr => anchorToLeadingEdge,
+        TextDirection.rtl => !anchorToLeadingEdge,
+      };
+      final TextBox box = ahchorToLeft ? boxes.first : boxes.last;
       metrics = _LineCaretMetrics(
-        offset: Offset(anchorToLeadingEdge ? box.start : box.end, box.top),
+        offset: Offset(ahchorToLeft ? box.left : box.right, box.top),
         writingDirection: box.direction,
       );
     } else {
@@ -1659,6 +1664,7 @@ class TextPainter {
   ///
   /// After disposal this painter is unusable.
   void dispose() {
+    assert(!debugDisposed);
     assert(() {
       _disposed = true;
       return true;

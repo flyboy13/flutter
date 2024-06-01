@@ -380,7 +380,7 @@ void main() {
       final double caretHeight = painter.getFullHeightForCaret(
         const ui.TextPosition(offset: 0),
         ui.Rect.zero,
-      )!;
+      );
       expect(caretHeight, 50.0);
       painter.dispose();
     }, skip: isBrowser && !isCanvasKit); // https://github.com/flutter/flutter/issues/56308
@@ -1429,6 +1429,12 @@ void main() {
     expect(painter.debugDisposed, true);
   });
 
+  test('TextPainter - asserts if disposed more than once', () {
+    final TextPainter painter = TextPainter()..dispose();
+    expect(painter.debugDisposed, isTrue);
+    expect(painter.dispose, throwsAssertionError);
+  });
+
   test('TextPainter computeWidth', () {
     const InlineSpan text = TextSpan(text: 'foobar');
     final TextPainter painter = TextPainter(text: text, textDirection: TextDirection.ltr);
@@ -1675,6 +1681,20 @@ void main() {
       expect(painter.height, 100);
     });
   }, skip: kIsWeb && !isCanvasKit); // [intended] strut spport for HTML renderer https://github.com/flutter/flutter/issues/32243.
+
+  test('getOffsetForCaret does not crash on decomposed characters', () {
+    final TextPainter painter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: const TextSpan(
+        text: '각',
+        style: TextStyle(fontSize: 10),
+      ),
+    )..layout(maxWidth: 1); // Force the jamo characters to soft wrap.
+    expect(
+      () => painter.getOffsetForCaret(const TextPosition(offset: 0), Rect.zero),
+      returnsNormally,
+    );
+  });
 
   test('TextPainter dispatches memory events', () async {
     await expectLater(
